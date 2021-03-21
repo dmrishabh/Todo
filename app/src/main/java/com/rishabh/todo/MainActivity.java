@@ -1,22 +1,31 @@
 package com.rishabh.todo;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.view.View;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.rishabh.todo.Adapter.ToDoAdapter;
 import com.rishabh.todo.Model.ToDoModel;
+import com.rishabh.todo.Utils.DatabaseHandler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements DialogCloseListener{
 
-    private RecyclerView   taskRecyclerView;
+    private DatabaseHandler db;
 
-    private ToDoAdapter toDoAdapter;
+    private RecyclerView tasksRecyclerView;
+    private ToDoAdapter tasksAdapter;
+    private FloatingActionButton fab;
 
     private List<ToDoModel> taskList;
 
@@ -24,29 +33,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+//        Objects.requireNonNull(getSupportActionBar()).hide();
 
+        db = new DatabaseHandler(this);
+        db.openDatabase();
 
-        taskList = new ArrayList<>();
+        tasksRecyclerView = findViewById(R.id.taskRecyclerView);
+        tasksRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        tasksAdapter = new ToDoAdapter(db,MainActivity.this);
+        tasksRecyclerView.setAdapter(tasksAdapter);
 
-        taskRecyclerView= findViewById(R.id.taskRecyclerView);
+        ItemTouchHelper itemTouchHelper = new
+                ItemTouchHelper(new RecyclerItemTouchHelper(tasksAdapter));
+        itemTouchHelper.attachToRecyclerView(tasksRecyclerView);
 
-        taskRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        fab = findViewById(R.id.floatingBtn);
 
-        toDoAdapter = new ToDoAdapter(this);
-        taskRecyclerView.setAdapter(toDoAdapter);
+        taskList = db.getAllTasks();
+        Collections.reverse(taskList);
 
-        ToDoModel task = new ToDoModel();
-        task.setTask("This is a task");
-        task.setStatus(0);
-        task.setId(1);
+        tasksAdapter.setTasks(taskList);
 
-        taskList.add(task);
-        taskList.add(task);
-        taskList.add(task);
-        taskList.add(task);
-        taskList.add(task);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AddNewTask.newInstance().show(getSupportFragmentManager(), AddNewTask.TAG);
+            }
+        });
+    }
 
-        toDoAdapter.setTasks(taskList);
-
+    @Override
+    public void handleDialogClose(DialogInterface dialog){
+        taskList = db.getAllTasks();
+        Collections.reverse(taskList);
+        tasksAdapter.setTasks(taskList);
+        tasksAdapter.notifyDataSetChanged();
     }
 }

@@ -1,7 +1,6 @@
 package com.rishabh.todo.Model;
 
 public class ToDoModel {
-
     private int id, status;
     private String task;
 
